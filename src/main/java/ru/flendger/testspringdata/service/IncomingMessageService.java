@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.flendger.testspringdata.model.IncomingMessage;
 import ru.flendger.testspringdata.model.MessageStatus;
 import ru.flendger.testspringdata.repository.IncomingMessageRepository;
+import ru.flendger.testspringdata.repository.MessagesLockRepository;
 
 import javax.persistence.EntityNotFoundException;
 import java.util.Optional;
@@ -14,10 +15,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class IncomingMessageService {
     private final IncomingMessageRepository incomingMessageRepository;
-
-    public IncomingMessage findById(Long id) {
-        return incomingMessageRepository.findById(id).orElseThrow(EntityNotFoundException::new);
-    }
+    private final MessagesLockRepository lockRepository;
 
     @Transactional
     public IncomingMessage save(IncomingMessage incomingMessage) {
@@ -39,6 +37,8 @@ public class IncomingMessageService {
 
     @Transactional
     public IncomingMessage progressNext() throws EntityNotFoundException {
+        lockRepository.lock("lock");
+
         Optional<IncomingMessage> messageOptional = incomingMessageRepository.findFirstByStatusOrderByIdAsc(MessageStatus.PENDING);
         if (messageOptional.isEmpty()) {
             throw new EntityNotFoundException("No messages for progress");

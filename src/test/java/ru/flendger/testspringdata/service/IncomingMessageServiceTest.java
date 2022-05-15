@@ -129,6 +129,7 @@ class IncomingMessageServiceTest {
                     IncomingMessage message = handler.handleNext();
                     handledMessages.add(message);
                 } catch (Exception e) {
+                    log.error(e.getMessage());
                     break;
                 }
             }
