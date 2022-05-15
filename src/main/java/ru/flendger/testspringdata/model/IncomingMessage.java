@@ -14,9 +14,12 @@ public class IncomingMessage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
-
     @Column(name = "external_id")
     private String externalId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private MessageStatus status;
 
     @Override
     public boolean equals(Object o) {
