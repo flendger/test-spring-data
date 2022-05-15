@@ -8,30 +8,26 @@ import org.springframework.boot.test.context.SpringBootTest;
 import ru.flendger.testspringdata.model.IncomingMessage;
 import ru.flendger.testspringdata.model.MessageStatus;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @Slf4j
-class IncomingMessageServiceTest {
+class IncomingMessageInsertServiceTest {
     @Autowired
     private IncomingMessageService incomingMessageService;
-
-    @Autowired
-    private IncomingMessageHandler handler;
 
     private final List<IncomingMessage> sourceMessages = new ArrayList<>();
 
     @Test
     public void insertTest() {
-        Queue<IncomingMessage> messages = new ConcurrentLinkedQueue<>();
-
         ExecutorService executorService = Executors.newFixedThreadPool(3);
 
         executorService.submit(() -> {
@@ -39,7 +35,7 @@ class IncomingMessageServiceTest {
             log.info("start save uuid_1 with pause");
 
             try {
-                messages.add(incomingMessageService.saveAndPause(message, 1000));
+                sourceMessages.add(incomingMessageService.saveAndPause(message, 1000));
                 log.info("end save uuid_1 with pause");
             } catch (Exception e) {
                 log.error("save uuid_1 with pause FAILED");
@@ -57,7 +53,7 @@ class IncomingMessageServiceTest {
             log.info("start save uuid_1 without pause");
 
             try {
-                messages.add(incomingMessageService.save(message));
+                sourceMessages.add(incomingMessageService.save(message));
                 log.info("end save uuid_1 without pause");
             } catch (Exception e) {
                 log.error("save uuid_1 without pause FAILED");
@@ -67,7 +63,7 @@ class IncomingMessageServiceTest {
         executorService.submit(() -> {
             IncomingMessage message = generateMessage("uuid_2");
             log.info("start save uuid_2");
-            messages.add(incomingMessageService.save(message));
+            sourceMessages.add(incomingMessageService.save(message));
             log.info("end save uuid_2");
         });
 
@@ -78,62 +74,14 @@ class IncomingMessageServiceTest {
             throw new RuntimeException(e);
         }
 
-        assertEquals(2, messages.size());
-        assertTrue(messages.stream().anyMatch(incomingMessage -> Objects.equals("uuid_1", incomingMessage.getExternalId())));
-        assertTrue(messages.stream().anyMatch(incomingMessage -> Objects.equals("uuid_2", incomingMessage.getExternalId())));
-
-        log.info("DELETING MESSAGES");
-        messages.forEach(incomingMessageService::delete);
-    }
-
-    @Test
-    public void updateTest() {
-        for (int i = 0; i < 100; i++) {
-            sourceMessages.add(incomingMessageService.save(generateMessage("uuid_" + 100 + i)));
-        }
-
-        Queue<IncomingMessage> handledMessages = new ConcurrentLinkedQueue<>();
-
-        ExecutorService executorService = Executors.newFixedThreadPool(4);
-
-        for (int i = 0; i < 4; i++) {
-            executorService.submit(getProgressNext(handledMessages));
-        }
-
-        executorService.shutdown();
-        try {
-            executorService.awaitTermination(10, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-        assertEquals(100, handledMessages.size());
-
-        Map<String, List<IncomingMessage>> messagesByUuid =
-                handledMessages
-                        .stream()
-                        .collect(Collectors.groupingBy(IncomingMessage::getExternalId));
-
-        messagesByUuid.forEach((uuid, incomingMessages) -> assertEquals(1, incomingMessages.size()));
+        assertEquals(2, sourceMessages.size());
+        assertTrue(sourceMessages.stream().anyMatch(incomingMessage -> Objects.equals("uuid_1", incomingMessage.getExternalId())));
+        assertTrue(sourceMessages.stream().anyMatch(incomingMessage -> Objects.equals("uuid_2", incomingMessage.getExternalId())));
     }
 
     @AfterEach
     void tearDown() {
         sourceMessages.forEach(incomingMessageService::delete);
-    }
-
-    private Runnable getProgressNext(Queue<IncomingMessage> handledMessages) {
-        return () -> {
-            while (true) {
-                try {
-                    IncomingMessage message = handler.handleNext();
-                    handledMessages.add(message);
-                } catch (Exception e) {
-                    log.error(e.getMessage());
-                    break;
-                }
-            }
-        };
     }
 
     private IncomingMessage generateMessage(String externalId) {
