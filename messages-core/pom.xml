@@ -13,6 +13,14 @@
     <groupId>ru.flendger.messages-core</groupId>
     <artifactId>messages-core</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
     <packaging>jar</packaging>
 
     <properties>

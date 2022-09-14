@@ -40,7 +40,7 @@ public class IncomingMessageService {
         lockRepository.lock("lock");
 
         Optional<IncomingMessage> messageOptional = incomingMessageRepository.findFirstByStatusOrderByIdAsc(MessageStatus.PENDING);
-        if (messageOptional.isEmpty()) {
+        if (!messageOptional.isPresent()) {
             throw new EntityNotFoundException("No messages for progress");
         }
 

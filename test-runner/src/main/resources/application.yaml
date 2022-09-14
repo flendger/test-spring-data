@@ -1,9 +1,10 @@
 spring:
   datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/test_db
-    username: test_db
-    password: test_db
+#    driver-class-name: org.postgresql.Driver
+#    url: jdbc:postgresql://localhost:5432/test_db
+#    username: test_db
+#    password: test_db
+    jndi-name: jdbc/mysource
   jpa:
     show-sql: true
     open-in-view: false
